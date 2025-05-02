@@ -1,11 +1,15 @@
-import { Request, Response } from 'express';
-import axios from 'axios';
-import 'dotenv/config'
+import { Request, Response } from "express";
+import axios from "axios";
+import { API_BASE_URL as API_URL } from "../constantas";
+import { handleError } from "../utils/handleError";
 
-const API_URL = process.env.API_BASE_URL || 'https://www.themealdb.com/api/json/v1/1/';
+interface Filters {
+  ingredient: string;
+  country: string;
+  category: string;
+}
 
-
-export const getRecipes = async (req: Request, res: Response) => {
+export const getRecipes = async (req: Request<Filters>, res: Response) => {
   try {
     const { ingredient, country, category } = req.query;
 
@@ -20,9 +24,12 @@ export const getRecipes = async (req: Request, res: Response) => {
     }
 
     const response = await axios.get(url);
-    res.json(response.data);
+
+    const result = response.data?.meals || [];
+
+    res.json(result);
   } catch (error) {
-    res.status(500).send('Error fetching recipes');
+    handleError(res, error, "Error fetching recipes");
   }
 };
 
@@ -30,35 +37,11 @@ export const getRecipeInfo = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const response = await axios.get(`${API_URL}lookup.php?i=${id}`);
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).send('Error fetching recipe info');
-  }
-};
 
-export const getAllAreas = async (req: Request, res: Response) => {
-  try {
-    const response = await axios.get(`${API_URL}list.php?a=list`);
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).send('Error fetching areas');
-  }
-};
+    const result = response.data?.meals === 'Invalid ID' ? null : response.data?.meals?.[0] ?? null;
 
-export const getAllCategories = async (req: Request, res: Response) => {
-  try {
-    const response = await axios.get(`${API_URL}list.php?c=list`);
-    res.json(response.data);
+    res.json(result);
   } catch (error) {
-    res.status(500).send('Error fetching categories');
-  }
-};
-
-export const getAllIngredients = async (req: Request, res: Response) => {
-  try {
-    const response = await axios.get(`${API_URL}list.php?i=list`);
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).send("Error fetching ingredients");
+    handleError(res, error, "Error fetching recipes");
   }
 };
